@@ -1,24 +1,81 @@
 import Foundation
 
-let fileName = "day1Input"
+let fileName = "day2Input"
 
-var mostCalories = [0, 0, 0]
+enum RPS {
+    case Rock
+    case Paper
+    case Scissors
+}
 
-func checkIfInTopThree(currentCalories: Int) {
-    if currentCalories > mostCalories[0] {
-        if currentCalories > mostCalories[1] {
-            if currentCalories > mostCalories[2] {
-                mostCalories[0] = mostCalories[1]
-                mostCalories[1] = mostCalories[2]
-                mostCalories[2] = currentCalories
-            } else {
-                mostCalories[0] = mostCalories[1]
-                mostCalories[1] = currentCalories
+let oppMoveDict = [
+    "A": RPS.Rock,
+    "B": RPS.Paper,
+    "C": RPS.Scissors
+]
+
+let myMoveDict = [
+    "X": RPS.Rock,
+    "Y": RPS.Paper,
+    "Z": RPS.Scissors
+]
+
+func playValue(of move: RPS) -> Int {
+    switch move {
+    case .Rock: return 1
+    case .Paper: return 2
+    case .Scissors: return 3
+    }
+}
+
+func getRPSScore(_ oppMove: RPS, _ myMove: RPS) -> Int {
+    if myMove == oppMove {
+        return 3
+    } else if (myMove == .Rock && oppMove == .Scissors) ||
+                (myMove == .Scissors && oppMove == .Paper) ||
+                (myMove == .Paper && oppMove == .Rock) {
+        return 6
+    }
+    return 0
+}
+
+func calculateGivenScore(for game: Substring) -> Int {
+    var score = 0
+    if let oppMove = oppMoveDict[game[0]], let myMove = myMoveDict[game[2]] {
+        score += getRPSScore(oppMove, myMove) + playValue(of: myMove)
+    }
+    
+    return score
+}
+
+func calculateStrategyScore(for game: Substring) -> Int {
+    var score = 0
+    if let oppMove = oppMoveDict[game[0]] {
+        let myMove = game[2]
+        if myMove == "Y" {
+            switch oppMove {
+            case .Rock: score += playValue(of: RPS.Rock)
+            case .Paper: score += playValue(of: RPS.Paper)
+            case .Scissors: score += playValue(of: RPS.Scissors)
             }
+            score += 3
+        } else if myMove == "Z" {
+            switch oppMove {
+            case .Rock: score += playValue(of: RPS.Paper)
+            case .Paper: score += playValue(of: RPS.Scissors)
+            case .Scissors: score += playValue(of: RPS.Rock)
+            }
+            score += 6
         } else {
-            mostCalories[0] = currentCalories
+            switch oppMove {
+            case .Rock: score += playValue(of: RPS.Scissors)
+            case .Paper: score += playValue(of: RPS.Rock)
+            case .Scissors: score += playValue(of: RPS.Paper)
+            }
         }
     }
+    
+    return score
 }
 
 if let fileUrl = Bundle.main.url(forResource: fileName, withExtension: "txt"){
@@ -26,24 +83,29 @@ if let fileUrl = Bundle.main.url(forResource: fileName, withExtension: "txt"){
         let contents = try String(contentsOf: fileUrl, encoding: .utf8)
         let lines = contents.split(separator: "\n", omittingEmptySubsequences: false)
         
-        var currentCalories = 0
+        /// Part 1
+        var givenScore = 0
         
-        for numCalories in lines {
-            if numCalories == "" {
-                checkIfInTopThree(currentCalories: currentCalories)
-                currentCalories = 0
-                continue
-            } else {
-                currentCalories += Int(numCalories) ?? 0
+        /// Part 2
+        var playStrategyScore = 0
+        for line in lines {
+            if line != "" {
+                givenScore += calculateGivenScore(for: line)
+                playStrategyScore += calculateStrategyScore(for: line)
             }
         }
         
-        checkIfInTopThree(currentCalories: currentCalories)
-        print("Top 3 Elves: \(mostCalories)")
-        print("Total: \(mostCalories.reduce(0, +))")
+        print("Score if XYZ is RPS: \(givenScore)")
+        print("Score if XYZ is Loss/Tie/Win: \(playStrategyScore)")
+        
+        /// Part 2
     } catch {
         print("contents could not be loaded")
     }
 }
 
-
+extension StringProtocol {
+    subscript(offset: Int) -> String {
+        String(self[index(startIndex, offsetBy: offset)])
+    }
+}
